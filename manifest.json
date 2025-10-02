@@ -1,7 +1,7 @@
 {
-  "title": "Rabbit R1 SDK Probe",
-  "url": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/sdk_probe.html",
-  "description": "A diagnostic app for Rabbit R1 that probes available SDK interfaces and displays results with scroll wheel support.",
-  "iconUrl": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/probe_icon.png",
-  "themeColor": "#3333ff"
+  "title": "Rabbit SDK Probe",
+  "url": "https://bunnyr1sdkprobe.vercel.app/",
+  "description": "Tests rendering, input, and JS execution on Rabbit R1.",
+  "iconUrl": "https://raw.githubusercontent.com/chaosemoth/sdk-probe/main/icon.png",
+  "themeColor": "#0f0f0f"
 }
