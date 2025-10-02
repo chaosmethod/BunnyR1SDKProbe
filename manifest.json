@@ -1,0 +1,7 @@
+{
+  "title": "SDK Probe",
+  "url": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/sdk_probe.html",
+  "description": "Rabbit R1 SDK interface tester",
+  "iconUrl": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/probe_icon.png",
+  "themeColor": "#3333ff"
+}
