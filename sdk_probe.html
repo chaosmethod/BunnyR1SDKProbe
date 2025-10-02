@@ -5,86 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rabbit SDK Probe</title>
   <style>
-    /* R1 App Styles - Optimized for 240x282px viewport */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: #1a1a1a;
       color: #ffffff;
+      font-family: sans-serif;
       height: 282px;
-      overflow: hidden;
-    }
-    #app {
       width: 240px;
-      height: 282px;
-      padding: 20px;
-      border: 5px solid #333;
-      background-color: #2a2a2a;
       overflow: hidden;
+      padding: 10px;
     }
     h1 {
       font-size: 18px;
-      margin-bottom: 15px;
-      text-align: center;
       color: #00ff88;
+      text-align: center;
+      margin-bottom: 10px;
     }
     button {
       background-color: #00ff88;
       color: #000;
       border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
+      padding: 10px;
       font-size: 14px;
-      cursor: pointer;
-      margin: 10px 0;
-      min-height: 44px;
+      border-radius: 5px;
       width: 100%;
+      margin-top: 10px;
+      min-height: 44px;
     }
     #output {
-      margin-top: 15px;
+      margin-top: 10px;
+      background: #333;
       padding: 10px;
-      background-color: #333;
       border-radius: 5px;
-      min-height: 50px;
       font-size: 12px;
-      word-wrap: break-word;
       white-space: pre-wrap;
+      min-height: 60px;
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <h1>Rabbit SDK Probe</h1>
-    <button id="testBtn">Test Button</button>
-    <div id="output">Initializing...</div>
-  </div>
+  <h1>Rabbit SDK Probe</h1>
+  <button id="testBtn">Test Button</button>
+  <div id="output">Initializing...</div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const testBtn = document.getElementById('testBtn');
-      const output = document.getElementById('output');
+    document.addEventListener("DOMContentLoaded", function () {
+      const output = document.getElementById("output");
+      const testBtn = document.getElementById("testBtn");
 
-      const log = msg => {
-        output.textContent += '\n' + msg;
-      };
+      const log = msg => output.textContent += "\\n" + msg;
 
-      // Runtime check
-      if (typeof PluginMessageHandler !== 'undefined') {
-        log('✅ Connected to R1 SDK');
+      if (typeof PluginMessageHandler !== "undefined") {
+        log("✅ Connected to R1 SDK");
       } else {
-        log('🌐 Running in browser - limited functionality');
+        log("🌐 Running in browser");
       }
 
-      // Button test
-      testBtn.addEventListener('click', function () {
-        const timestamp = new Date().toLocaleTimeString();
-        log(`🖱️ Button clicked at ${timestamp}`);
-
-        if (typeof PluginMessageHandler !== 'undefined') {
+      testBtn.addEventListener("click", () => {
+        log("🖱️ Button clicked at " + new Date().toLocaleTimeString());
+        if (typeof PluginMessageHandler !== "undefined") {
           PluginMessageHandler.postMessage(JSON.stringify({
             message: "Hello from SDK Probe!",
             useLLM: true
@@ -92,21 +70,8 @@
         }
       });
 
-      // Basic input events
-      window.addEventListener('click', () => log('🖱️ Click event detected'));
-      window.addEventListener('touchstart', () => log('👆 Touch event detected'));
-
-      // Rabbit-specific events (may or may not fire)
-      window.addEventListener('scrollUp', () => log('⬆️ Scroll Up detected'));
-      window.addEventListener('scrollDown', () => log('⬇️ Scroll Down detected'));
-      window.addEventListener('sideClick', () => log('🔘 PTT Button pressed'));
-
-      // Plugin message handler
-      window.onPluginMessage = function (data) {
-        if (data.message) {
-          log(`🤖 LLM Response: ${data.message}`);
-        }
-      };
+      window.addEventListener("touchstart", () => log("👆 Touch detected"));
+      window.addEventListener("click", () => log("🖱️ Click detected"));
     });
   </script>
 </body>
