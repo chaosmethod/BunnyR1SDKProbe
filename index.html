@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
-    <title>Rabbit R1 SDK Probe with Camera Test</title>
+    <title>Rabbit R1 Camera Rotation & Mic Test</title>
     <style>
         body {
             margin: 0;
@@ -36,13 +36,18 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        input {
+        #camera-preview {
             width: 100%;
-            padding: 5px;
-            margin: 5px 0;
-            box-sizing: border-box;
+            height: auto;
+            max-height: 200px;
         }
-        #log, .log-div {
+        #mic-canvas {
+            width: 100%;
+            height: 50px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .log-div {
             background-color: #fff;
             border: 1px solid #ddd;
             padding: 10px;
@@ -51,30 +56,17 @@
             font-size: 10px;
             white-space: pre-wrap;
         }
-        #camera-preview {
-            width: 100%;
-            height: auto;
-            max-height: 200px;
+        p {
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
-    <h1>R1 SDK Probe Tester (with Camera)</h1>
-    
-    <section id="button-events">
-        <h2>Button Events</h2>
-        <p>Scroll wheel and PTT button events will log here.</p>
-        <div id="button-log" class="log-div"></div>
-    </section>
-    
-    <section id="touch">
-        <h2>Touch Event Handler</h2>
-        <button id="simulate-touch">Simulate Touch (Logs to console)</button>
-        <div id="touch-log" class="log-div"></div>
-    </section>
+    <h1>R1 Camera Rotation & Mic Tester</h1>
     
     <section id="camera">
-        <h2>Camera Access (Guessed API)</h2>
+        <h2>Camera Test (with Rotation)</h2>
+        <p>Note: Use the scroll wheel to rotate the camera and observe if the preview updates. Enter vision mode by double-pressing the side button if needed.</p>
         <button id="start-camera">Start Camera Preview</button>
         <button id="capture-photo">Capture Photo</button>
         <button id="stop-camera">Stop Camera</button>
@@ -82,76 +74,36 @@
         <div id="camera-log" class="log-div"></div>
     </section>
     
-    <section id="close">
-        <h2>Close WebView</h2>
-        <button id="close-app">Close App</button>
+    <section id="mic">
+        <h2>Mic Test</h2>
+        <button id="start-mic">Start Mic (Visualize Levels)</button>
+        <button id="stop-mic">Stop Mic</button>
+        <canvas id="mic-canvas"></canvas>
+        <div id="mic-log" class="log-div"></div>
     </section>
-    
+
     <section id="global-log">
         <h2>Global Log</h2>
         <div id="log" class="log-div"></div>
     </section>
 
     <script>
-        const logDiv = document.getElementById('log');
         function log(message, targetId = 'log') {
             const target = document.getElementById(targetId);
             target.innerHTML += `${new Date().toISOString()}: ${message}\n`;
             target.scrollTop = target.scrollHeight;
         }
 
-        // Button Events
-        window.addEventListener('scrollUp', () => {
-            log('Scroll Up event triggered', 'button-log');
-            log('Scroll Up event triggered');
-        });
-
-        window.addEventListener('scrollDown', () => {
-            log('Scroll Down event triggered', 'button-log');
-            log('Scroll Down event triggered');
-        });
-
-        window.addEventListener('sideClick', () => {
-            log('Side Click (PTT single press) event triggered', 'button-log');
-            log('Side Click event triggered');
-        });
-
-        window.addEventListener('longPressStart', () => {
-            log('Long Press Start event triggered', 'button-log');
-            log('Long Press Start event triggered');
-        });
-
-        // Touch Event Handler
-        document.getElementById('simulate-touch').addEventListener('click', () => {
-            try {
-                TouchEventHandler.postMessage(JSON.stringify({ type: 'tap', x: 120, y: 141 }));
-                log('Simulated touch event sent', 'touch-log');
-                log('Simulated touch event sent');
-            } catch (e) {
-                log(`Error simulating touch: ${e.message}`);
-            }
-        });
-
-        // Close WebView
-        document.getElementById('close-app').addEventListener('click', () => {
-            try {
-                closeWebView.postMessage();
-                log('Close WebView requested');
-            } catch (e) {
-                log(`Error closing: ${e.message}`);
-            }
-        });
-
-        // Camera Access (Guessed using standard Web API)
+        // Camera Test
         let cameraStream = null;
         const videoElement = document.getElementById('camera-preview');
 
         async function startCamera() {
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); // Adjust facingMode as needed
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); // Try 'environment' first; user can rotate
                 videoElement.srcObject = cameraStream;
                 videoElement.play();
-                log('Camera preview started', 'camera-log');
+                log('Camera preview started (try rotating with scroll wheel)', 'camera-log');
                 log('Camera preview started');
             } catch (e) {
                 log(`Camera access error: ${e.message}`, 'camera-log');
@@ -189,7 +141,69 @@
         document.getElementById('stop-camera').addEventListener('click', stopCamera);
         document.getElementById('capture-photo').addEventListener('click', capturePhoto);
 
-        log('SDK Probe with Camera initialized');
+        // Mic Test
+        let micStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationFrame = null;
+
+        async function startMic() {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(micStream);
+                analyser = audioContext.createAnalyser();
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                log('Mic started - speaking to see levels', 'mic-log');
+                log('Mic started');
+                visualizeMic();
+            } catch (e) {
+                log(`Mic access error: ${e.message}`, 'mic-log');
+                log(`Mic access error: ${e.message}`);
+            }
+        }
+
+        function stopMic() {
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+                if (audioContext) audioContext.close();
+                cancelAnimationFrame(animationFrame);
+                const canvas = document.getElementById('mic-canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                log('Mic stopped', 'mic-log');
+                log('Mic stopped');
+            }
+        }
+
+        function visualizeMic() {
+            const canvas = document.getElementById('mic-canvas');
+            const ctx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                animationFrame = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 2);
+                    ctx.fillStyle = `rgb(${barHeight + 100}, 50, 50)`;
+                    ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        document.getElementById('start-mic').addEventListener('click', startMic);
+        document.getElementById('stop-mic').addEventListener('click', stopMic);
+
+        log('Camera Rotation & Mic Test initialized');
     </script>
 </body>
 </html>
