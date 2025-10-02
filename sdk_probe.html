@@ -1,79 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Rabbit R1 SDK Probe</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabbit SDK Probe</title>
   <style>
-    body {
-      background-color: #111;
-      color: #eee;
-      font-family: monospace;
-      padding: 10px;
+    /* R1 App Styles - Optimized for 240x282px viewport */
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      height: 282px;
       overflow: hidden;
     }
-    #output {
-      white-space: pre-wrap;
-      max-height: 240px;
+    #app {
+      width: 240px;
+      height: 282px;
+      padding: 20px;
+      border: 5px solid #333;
+      background-color: #2a2a2a;
       overflow: hidden;
+    }
+    h1 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #00ff88;
+    }
+    button {
+      background-color: #00ff88;
+      color: #000;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      margin: 10px 0;
+      min-height: 44px;
+      width: 100%;
+    }
+    #output {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #333;
+      border-radius: 5px;
+      min-height: 50px;
+      font-size: 12px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <h2>Rabbit R1 SDK Probe</h2>
-  <div id="output">Probing...</div>
+  <div id="app">
+    <h1>Rabbit SDK Probe</h1>
+    <button id="testBtn">Test Button</button>
+    <div id="output">Initializing...</div>
+  </div>
 
   <script>
-    const output = document.getElementById('output');
-    let lines = [];
+    document.addEventListener('DOMContentLoaded', function () {
+      const testBtn = document.getElementById('testBtn');
+      const output = document.getElementById('output');
 
-    function log(message) {
-      lines.push(message);
-      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
-    }
+      const log = msg => {
+        output.textContent += '\n' + msg;
+      };
 
-    // Scroll wheel navigation
-    let scrollIndex = 0;
-    const maxLines = 12;
-
-    window.addEventListener('scrollUp', () => {
-      if (scrollIndex > 0) scrollIndex--;
-      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
-    });
-
-    window.addEventListener('scrollDown', () => {
-      if (scrollIndex < lines.length - maxLines) scrollIndex++;
-      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
-    });
-
-    // Probing SDK interfaces
-    log('--- SDK Interface Probe ---');
-
-    const probes = [
-      ['creationSensors', 'in window'],
-      ['creationSensors.accelerometer', 'in window.creationSensors'],
-      ['creationSensors.accelerometer.start', 'typeof === function'],
-      ['PluginMessageHandler.postMessage', 'typeof === function'],
-      ['creationStorage.plain.setItem', 'typeof === function'],
-      ['creationStorage.secure.setItem', 'typeof === function'],
-      ['TouchEventHandler.postMessage', 'typeof === function'],
-      ['closeWebView.postMessage', 'typeof === function'],
-      ['getUserMedia', 'in navigator'],
-    ];
-
-    probes.forEach(([path, test]) => {
-      try {
-        let result = false;
-        if (test === 'in window') result = path in window;
-        else if (test === 'in window.creationSensors') result = path in window.creationSensors;
-        else if (test.startsWith('typeof')) {
-          const fn = eval(path);
-          result = typeof fn === test.split(' ')[2];
-        }
-        log(`✔ ${path} available`);
-      } catch (e) {
-        log(`✖ ${path} not available`);
+      // Runtime check
+      if (typeof PluginMessageHandler !== 'undefined') {
+        log('✅ Connected to R1 SDK');
+      } else {
+        log('🌐 Running in browser - limited functionality');
       }
+
+      // Button test
+      testBtn.addEventListener('click', function () {
+        const timestamp = new Date().toLocaleTimeString();
+        log(`🖱️ Button clicked at ${timestamp}`);
+
+        if (typeof PluginMessageHandler !== 'undefined') {
+          PluginMessageHandler.postMessage(JSON.stringify({
+            message: "Hello from SDK Probe!",
+            useLLM: true
+          }));
+        }
+      });
+
+      // Basic input events
+      window.addEventListener('click', () => log('🖱️ Click event detected'));
+      window.addEventListener('touchstart', () => log('👆 Touch event detected'));
+
+      // Rabbit-specific events (may or may not fire)
+      window.addEventListener('scrollUp', () => log('⬆️ Scroll Up detected'));
+      window.addEventListener('scrollDown', () => log('⬇️ Scroll Down detected'));
+      window.addEventListener('sideClick', () => log('🔘 PTT Button pressed'));
+
+      // Plugin message handler
+      window.onPluginMessage = function (data) {
+        if (data.message) {
+          log(`🤖 LLM Response: ${data.message}`);
+        }
+      };
     });
   </script>
 </body>
