@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Rabbit R1 SDK Probe</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #eee;
+      font-family: monospace;
+      padding: 10px;
+      margin: 0;
+      overflow: hidden;
+    }
+    #output {
+      white-space: pre-wrap;
+      max-height: 240px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <h2>Rabbit R1 SDK Probe</h2>
+  <div id="output">Probing...</div>
+
+  <script>
+    const output = document.getElementById('output');
+    let lines = [];
+
+    function log(message) {
+      lines.push(message);
+      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
+    }
+
+    // Scroll wheel navigation
+    let scrollIndex = 0;
+    const maxLines = 12;
+
+    window.addEventListener('scrollUp', () => {
+      if (scrollIndex > 0) scrollIndex--;
+      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
+    });
+
+    window.addEventListener('scrollDown', () => {
+      if (scrollIndex < lines.length - maxLines) scrollIndex++;
+      output.textContent = lines.slice(scrollIndex, scrollIndex + maxLines).join('\n');
+    });
+
+    // Probing SDK interfaces
+    log('--- SDK Interface Probe ---');
+
+    const probes = [
+      ['creationSensors', 'in window'],
+      ['creationSensors.accelerometer', 'in window.creationSensors'],
+      ['creationSensors.accelerometer.start', 'typeof === function'],
+      ['PluginMessageHandler.postMessage', 'typeof === function'],
+      ['creationStorage.plain.setItem', 'typeof === function'],
+      ['creationStorage.secure.setItem', 'typeof === function'],
+      ['TouchEventHandler.postMessage', 'typeof === function'],
+      ['closeWebView.postMessage', 'typeof === function'],
+      ['getUserMedia', 'in navigator'],
+    ];
+
+    probes.forEach(([path, test]) => {
+      try {
+        let result = false;
+        if (test === 'in window') result = path in window;
+        else if (test === 'in window.creationSensors') result = path in window.creationSensors;
+        else if (test.startsWith('typeof')) {
+          const fn = eval(path);
+          result = typeof fn === test.split(' ')[2];
+        }
+        log(`✔ ${path} available`);
+      } catch (e) {
+        log(`✖ ${path} not available`);
+      }
+    });
+  </script>
+</body>
+</html>
