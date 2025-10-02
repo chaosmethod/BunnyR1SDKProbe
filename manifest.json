@@ -1,7 +1,7 @@
 {
-  "title": "SDK Probe",
+  "title": "Rabbit R1 SDK Probe",
   "url": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/sdk_probe.html",
-  "description": "Rabbit R1 SDK interface tester",
+  "description": "A diagnostic app for Rabbit R1 that probes available SDK interfaces and displays results with scroll wheel support.",
   "iconUrl": "https://raw.githubusercontent.com/chaosmethod/BunnyR1SDKProbe/main/probe_icon.png",
   "themeColor": "#3333ff"
 }
