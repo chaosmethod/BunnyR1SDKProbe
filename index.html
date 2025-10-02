@@ -1,78 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rabbit SDK Probe</title>
-  <style>
-    body {
-      background-color: #1a1a1a;
-      color: #ffffff;
-      font-family: sans-serif;
-      height: 282px;
-      width: 240px;
-      overflow: hidden;
-      padding: 10px;
-    }
-    h1 {
-      font-size: 18px;
-      color: #00ff88;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    button {
-      background-color: #00ff88;
-      color: #000;
-      border: none;
-      padding: 10px;
-      font-size: 14px;
-      border-radius: 5px;
-      width: 100%;
-      margin-top: 10px;
-      min-height: 44px;
-    }
-    #output {
-      margin-top: 10px;
-      background: #333;
-      padding: 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      white-space: pre-wrap;
-      min-height: 60px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
+    <title>Rabbit R1 SDK Probe</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            width: 240px;
+            height: 282px;
+            overflow-y: auto;
+            background-color: #f0f0f0;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        section {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        button {
+            min-width: 44px;
+            min-height: 44px;
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        #log {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
 <body>
-  <h1>Rabbit SDK Probe</h1>
-  <button id="testBtn">Test Button</button>
-  <div id="output">Initializing...</div>
+    <h1>R1 SDK Probe Tester</h1>
+    
+    <section id="button-events">
+        <h2>Button Events</h2>
+        <p>Scroll wheel and PTT button events will log here.</p>
+        <div id="button-log"></div>
+    </section>
+    
+    <section id="accelerometer">
+        <h2>Accelerometer</h2>
+        <button id="start-accel">Start Accelerometer</button>
+        <button id="stop-accel">Stop Accelerometer</button>
+        <div id="accel-log"></div>
+    </section>
+    
+    <section id="llm">
+        <h2>LLM Communication</h2>
+        <input type="text" id="llm-message" placeholder="Enter message for LLM">
+        <button id="send-llm">Send to LLM (with R1 Response)</button>
+        <div id="llm-log"></div>
+    </section>
+    
+    <section id="storage">
+        <h2>Storage</h2>
+        <h3>Plain Storage</h3>
+        <input type="text" id="plain-key" placeholder="Key">
+        <input type="text" id="plain-value" placeholder="Value">
+        <button id="set-plain">Set Plain</button>
+        <button id="get-plain">Get Plain</button>
+        <div id="plain-log"></div>
+        
+        <h3>Secure Storage</h3>
+        <input type="text" id="secure-key" placeholder="Key">
+        <input type="text" id="secure-value" placeholder="Value">
+        <button id="set-secure">Set Secure</button>
+        <button id="get-secure">Get Secure</button>
+        <div id="secure-log"></div>
+    </section>
+    
+    <section id="touch">
+        <h2>Touch Event Handler</h2>
+        <button id="simulate-touch">Simulate Touch (Logs to console)</button>
+        <div id="touch-log"></div>
+    </section>
+    
+    <section id="close">
+        <h2>Close WebView</h2>
+        <button id="close-app">Close App</button>
+    </section>
+    
+    <section id="global-log">
+        <h2>Global Log</h2>
+        <div id="log"></div>
+    </section>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const output = document.getElementById("output");
-      const testBtn = document.getElementById("testBtn");
-
-      const log = msg => output.textContent += "\\n" + msg;
-
-      if (typeof PluginMessageHandler !== "undefined") {
-        log("✅ Connected to R1 SDK");
-      } else {
-        log("🌐 Running in browser");
-      }
-
-      testBtn.addEventListener("click", () => {
-        log("🖱️ Button clicked at " + new Date().toLocaleTimeString());
-        if (typeof PluginMessageHandler !== "undefined") {
-          PluginMessageHandler.postMessage(JSON.stringify({
-            message: "Hello from SDK Probe!",
-            useLLM: true
-          }));
+    <script>
+        const logDiv = document.getElementById('log');
+        function log(message, targetId = 'log') {
+            const target = document.getElementById(targetId);
+            target.innerHTML += `${new Date().toISOString()}: ${message}\n`;
+            target.scrollTop = target.scrollHeight;
         }
-      });
 
-      window.addEventListener("touchstart", () => log("👆 Touch detected"));
-      window.addEventListener("click", () => log("🖱️ Click detected"));
-    });
-  </script>
+        // Button Events
+        window.addEventListener('scrollUp', () => {
+            log('Scroll Up event triggered', 'button-log');
+            log('Scroll Up event triggered');
+        });
+
+        window.addEventListener('scrollDown', () => {
+            log('Scroll Down event triggered', 'button-log');
+            log('Scroll Down event triggered');
+        });
+
+        window.addEventListener('sideClick', () => {
+            log('Side Click (PTT single press) event triggered', 'button-log');
+            log('Side Click event triggered');
+        });
+
+        window.addEventListener('longPressStart', () => {
+            log('Long Press Start event triggered', 'button-log');
+            log('Long Press Start event triggered');
+        });
+
+        // Accelerometer
+        let accelInterval;
+        document.getElementById('start-accel').addEventListener('click', () => {
+            try {
+                window.creationSensors.accelerometer.start((data) => {
+                    log(`Tilt data: x=${data.x}, y=${data.y}, z=${data.z}`, 'accel-log');
+                    log(`Tilt data: ${JSON.stringify(data)}`);
+                }, { frequency: 60 });
+                log('Accelerometer started');
+            } catch (e) {
+                log(`Error starting accelerometer: ${e.message}`);
+            }
+        });
+
+        document.getElementById('stop-accel').addEventListener('click', () => {
+            try {
+                window.creationSensors.accelerometer.stop();
+                log('Accelerometer stopped');
+            } catch (e) {
+                log(`Error stopping accelerometer: ${e.message}`);
+            }
+        });
+
+        // LLM Communication
+        window.onPluginMessage = function(data) {
+            if (data.data) {
+                try {
+                    const response = JSON.parse(data.data);
+                    log(`LLM Response: ${JSON.stringify(response)}`, 'llm-log');
+                    log(`LLM Response: ${JSON.stringify(response)}`);
+                } catch (e) {
+                    log(`Error parsing LLM response: ${e.message}`);
+                }
+            } else {
+                log('Received empty LLM response');
+            }
+        };
+
+        document.getElementById('send-llm').addEventListener('click', () => {
+            const message = document.getElementById('llm-message').value;
+            if (!message) return log('Enter a message first');
+            
+            try {
+                PluginMessageHandler.postMessage(JSON.stringify({
+                    message: message,
+                    useLLM: true,
+                    wantsR1Response: true
+                }));
+                log(`Sent to LLM: ${message}`);
+            } catch (e) {
+                log(`Error sending to LLM: ${e.message}`);
+            }
+        });
+
+        // Storage
+        // Plain
+        document.getElementById('set-plain').addEventListener('click', async () => {
+            const key = document.getElementById('plain-key').value;
+            const value = document.getElementById('plain-value').value;
+            if (!key || !value) return log('Enter key and value');
+            
+            try {
+                await window.creationStorage.plain.setItem(key, btoa(value));
+                log(`Plain set: ${key} = ${value}`, 'plain-log');
+                log(`Plain set: ${key}`);
+            } catch (e) {
+                log(`Error setting plain: ${e.message}`);
+            }
+        });
+
+        document.getElementById('get-plain').addEventListener('click', async () => {
+            const key = document.getElementById('plain-key').value;
+            if (!key) return log('Enter key');
+            
+            try {
+                const value = atob(await window.creationStorage.plain.getItem(key));
+                log(`Plain get: ${key} = ${value}`, 'plain-log');
+                log(`Plain get: ${key} = ${value}`);
+            } catch (e) {
+                log(`Error getting plain: ${e.message}`);
+            }
+        });
+
+        // Secure
+        document.getElementById('set-secure').addEventListener('click', async () => {
+            const key = document.getElementById('secure-key').value;
+            const value = document.getElementById('secure-value').value;
+            if (!key || !value) return log('Enter key and value');
+            
+            try {
+                await window.creationStorage.secure.setItem(key, btoa(value));
+                log(`Secure set: ${key} = ${value}`, 'secure-log');
+                log(`Secure set: ${key}`);
+            } catch (e) {
+                log(`Error setting secure: ${e.message}`);
+            }
+        });
+
+        document.getElementById('get-secure').addEventListener('click', async () => {
+            const key = document.getElementById('secure-key').value;
+            if (!key) return log('Enter key');
+            
+            try {
+                const value = atob(await window.creationStorage.secure.getItem(key));
+                log(`Secure get: ${key} = ${value}`, 'secure-log');
+                log(`Secure get: ${key} = ${value}`);
+            } catch (e) {
+                log(`Error getting secure: ${e.message}`);
+            }
+        });
+
+        // Touch Event Handler
+        document.getElementById('simulate-touch').addEventListener('click', () => {
+            try {
+                // Assuming postMessage for simulation; adjust if specific params needed
+                TouchEventHandler.postMessage(JSON.stringify({ type: 'tap', x: 120, y: 141 }));
+                log('Simulated touch event sent', 'touch-log');
+                log('Simulated touch event sent');
+            } catch (e) {
+                log(`Error simulating touch: ${e.message}`);
+            }
+        });
+
+        // Close WebView
+        document.getElementById('close-app').addEventListener('click', () => {
+            try {
+                closeWebView.postMessage();
+                log('Close WebView requested');
+            } catch (e) {
+                log(`Error closing: ${e.message}`);
+            }
+        });
+
+        log('SDK Probe initialized');
+    </script>
 </body>
 </html>
+
