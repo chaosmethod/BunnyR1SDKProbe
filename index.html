@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
-    <title>Rabbit R1 SDK Probe</title>
+    <title>Rabbit R1 SDK Probe with Camera Test</title>
     <style>
         body {
             margin: 0;
@@ -42,7 +42,7 @@
             margin: 5px 0;
             box-sizing: border-box;
         }
-        #log {
+        #log, .log-div {
             background-color: #fff;
             border: 1px solid #ddd;
             padding: 10px;
@@ -51,52 +51,35 @@
             font-size: 10px;
             white-space: pre-wrap;
         }
+        #camera-preview {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+        }
     </style>
 </head>
 <body>
-    <h1>R1 SDK Probe Tester</h1>
+    <h1>R1 SDK Probe Tester (with Camera)</h1>
     
     <section id="button-events">
         <h2>Button Events</h2>
         <p>Scroll wheel and PTT button events will log here.</p>
-        <div id="button-log"></div>
-    </section>
-    
-    <section id="accelerometer">
-        <h2>Accelerometer</h2>
-        <button id="start-accel">Start Accelerometer</button>
-        <button id="stop-accel">Stop Accelerometer</button>
-        <div id="accel-log"></div>
-    </section>
-    
-    <section id="llm">
-        <h2>LLM Communication</h2>
-        <input type="text" id="llm-message" placeholder="Enter message for LLM">
-        <button id="send-llm">Send to LLM (with R1 Response)</button>
-        <div id="llm-log"></div>
-    </section>
-    
-    <section id="storage">
-        <h2>Storage</h2>
-        <h3>Plain Storage</h3>
-        <input type="text" id="plain-key" placeholder="Key">
-        <input type="text" id="plain-value" placeholder="Value">
-        <button id="set-plain">Set Plain</button>
-        <button id="get-plain">Get Plain</button>
-        <div id="plain-log"></div>
-        
-        <h3>Secure Storage</h3>
-        <input type="text" id="secure-key" placeholder="Key">
-        <input type="text" id="secure-value" placeholder="Value">
-        <button id="set-secure">Set Secure</button>
-        <button id="get-secure">Get Secure</button>
-        <div id="secure-log"></div>
+        <div id="button-log" class="log-div"></div>
     </section>
     
     <section id="touch">
         <h2>Touch Event Handler</h2>
         <button id="simulate-touch">Simulate Touch (Logs to console)</button>
-        <div id="touch-log"></div>
+        <div id="touch-log" class="log-div"></div>
+    </section>
+    
+    <section id="camera">
+        <h2>Camera Access (Guessed API)</h2>
+        <button id="start-camera">Start Camera Preview</button>
+        <button id="capture-photo">Capture Photo</button>
+        <button id="stop-camera">Stop Camera</button>
+        <video id="camera-preview" autoplay playsinline></video>
+        <div id="camera-log" class="log-div"></div>
     </section>
     
     <section id="close">
@@ -106,7 +89,7 @@
     
     <section id="global-log">
         <h2>Global Log</h2>
-        <div id="log"></div>
+        <div id="log" class="log-div"></div>
     </section>
 
     <script>
@@ -138,121 +121,9 @@
             log('Long Press Start event triggered');
         });
 
-        // Accelerometer
-        let accelInterval;
-        document.getElementById('start-accel').addEventListener('click', () => {
-            try {
-                window.creationSensors.accelerometer.start((data) => {
-                    log(`Tilt data: x=${data.x}, y=${data.y}, z=${data.z}`, 'accel-log');
-                    log(`Tilt data: ${JSON.stringify(data)}`);
-                }, { frequency: 60 });
-                log('Accelerometer started');
-            } catch (e) {
-                log(`Error starting accelerometer: ${e.message}`);
-            }
-        });
-
-        document.getElementById('stop-accel').addEventListener('click', () => {
-            try {
-                window.creationSensors.accelerometer.stop();
-                log('Accelerometer stopped');
-            } catch (e) {
-                log(`Error stopping accelerometer: ${e.message}`);
-            }
-        });
-
-        // LLM Communication
-        window.onPluginMessage = function(data) {
-            if (data.data) {
-                try {
-                    const response = JSON.parse(data.data);
-                    log(`LLM Response: ${JSON.stringify(response)}`, 'llm-log');
-                    log(`LLM Response: ${JSON.stringify(response)}`);
-                } catch (e) {
-                    log(`Error parsing LLM response: ${e.message}`);
-                }
-            } else {
-                log('Received empty LLM response');
-            }
-        };
-
-        document.getElementById('send-llm').addEventListener('click', () => {
-            const message = document.getElementById('llm-message').value;
-            if (!message) return log('Enter a message first');
-            
-            try {
-                PluginMessageHandler.postMessage(JSON.stringify({
-                    message: message,
-                    useLLM: true,
-                    wantsR1Response: true
-                }));
-                log(`Sent to LLM: ${message}`);
-            } catch (e) {
-                log(`Error sending to LLM: ${e.message}`);
-            }
-        });
-
-        // Storage
-        // Plain
-        document.getElementById('set-plain').addEventListener('click', async () => {
-            const key = document.getElementById('plain-key').value;
-            const value = document.getElementById('plain-value').value;
-            if (!key || !value) return log('Enter key and value');
-            
-            try {
-                await window.creationStorage.plain.setItem(key, btoa(value));
-                log(`Plain set: ${key} = ${value}`, 'plain-log');
-                log(`Plain set: ${key}`);
-            } catch (e) {
-                log(`Error setting plain: ${e.message}`);
-            }
-        });
-
-        document.getElementById('get-plain').addEventListener('click', async () => {
-            const key = document.getElementById('plain-key').value;
-            if (!key) return log('Enter key');
-            
-            try {
-                const value = atob(await window.creationStorage.plain.getItem(key));
-                log(`Plain get: ${key} = ${value}`, 'plain-log');
-                log(`Plain get: ${key} = ${value}`);
-            } catch (e) {
-                log(`Error getting plain: ${e.message}`);
-            }
-        });
-
-        // Secure
-        document.getElementById('set-secure').addEventListener('click', async () => {
-            const key = document.getElementById('secure-key').value;
-            const value = document.getElementById('secure-value').value;
-            if (!key || !value) return log('Enter key and value');
-            
-            try {
-                await window.creationStorage.secure.setItem(key, btoa(value));
-                log(`Secure set: ${key} = ${value}`, 'secure-log');
-                log(`Secure set: ${key}`);
-            } catch (e) {
-                log(`Error setting secure: ${e.message}`);
-            }
-        });
-
-        document.getElementById('get-secure').addEventListener('click', async () => {
-            const key = document.getElementById('secure-key').value;
-            if (!key) return log('Enter key');
-            
-            try {
-                const value = atob(await window.creationStorage.secure.getItem(key));
-                log(`Secure get: ${key} = ${value}`, 'secure-log');
-                log(`Secure get: ${key} = ${value}`);
-            } catch (e) {
-                log(`Error getting secure: ${e.message}`);
-            }
-        });
-
         // Touch Event Handler
         document.getElementById('simulate-touch').addEventListener('click', () => {
             try {
-                // Assuming postMessage for simulation; adjust if specific params needed
                 TouchEventHandler.postMessage(JSON.stringify({ type: 'tap', x: 120, y: 141 }));
                 log('Simulated touch event sent', 'touch-log');
                 log('Simulated touch event sent');
@@ -271,8 +142,54 @@
             }
         });
 
-        log('SDK Probe initialized');
+        // Camera Access (Guessed using standard Web API)
+        let cameraStream = null;
+        const videoElement = document.getElementById('camera-preview');
+
+        async function startCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); // Adjust facingMode as needed
+                videoElement.srcObject = cameraStream;
+                videoElement.play();
+                log('Camera preview started', 'camera-log');
+                log('Camera preview started');
+            } catch (e) {
+                log(`Camera access error: ${e.message}`, 'camera-log');
+                log(`Camera access error: ${e.message}`);
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+                log('Camera stopped', 'camera-log');
+                log('Camera stopped');
+            }
+        }
+
+        async function capturePhoto() {
+            if (!cameraStream) return log('Start camera first', 'camera-log');
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 240;
+                canvas.height = 282;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0, 240, 282);
+                const base64Image = canvas.toDataURL('image/jpeg');
+                log(`Photo captured: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
+                log('Photo captured');
+            } catch (e) {
+                log(`Capture error: ${e.message}`, 'camera-log');
+            }
+        }
+
+        document.getElementById('start-camera').addEventListener('click', startCamera);
+        document.getElementById('stop-camera').addEventListener('click', stopCamera);
+        document.getElementById('capture-photo').addEventListener('click', capturePhoto);
+
+        log('SDK Probe with Camera initialized');
     </script>
 </body>
 </html>
-
