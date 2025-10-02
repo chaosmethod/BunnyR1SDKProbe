@@ -84,8 +84,14 @@
             max-width: 100%;
             max-height: 80%;
         }
-        #fullscreen button {
-            margin-top: 10px;
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            min-width: auto;
+            min-height: auto;
+            padding: 5px 10px;
+            font-size: 12px;
         }
         .hidden {
             display: none;
@@ -119,14 +125,14 @@
     </div>
 
     <div id="gallery-screen" class="hidden">
+        <button id="back-to-main" class="back-button">Back</button>
         <h1>Gallery</h1>
         <div id="gallery"></div>
-        <button id="back-to-main">Back</button>
     </div>
 
     <div id="fullscreen" class="hidden">
+        <button id="back-to-gallery" class="back-button">Back</button>
         <img id="fullscreen-img" src="">
-        <button id="back-to-gallery">Back</button>
     </div>
 
     <script>
