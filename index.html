@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
-    <title>Rabbit R1 Camera Rotation Test</title>
+    <title>Rabbit R1 Camera Rotation Test with Storage</title>
     <style>
         body {
             margin: 0;
@@ -53,20 +53,37 @@
         p {
             margin: 5px 0;
         }
+        #gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        #gallery img {
+            width: 100px;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <h1>R1 Camera Rotation Tester</h1>
+    <h1>R1 Camera Rotation Tester with Storage</h1>
     
     <section id="camera">
         <h2>Camera Test (with Rotation)</h2>
         <p>To rotate: Double-press side button for vision mode, then scroll wheel to flip forward/backward. Preview should update.</p>
         <button id="start-camera">Start Camera Preview</button>
         <button id="switch-direction">Switch Direction</button>
-        <button id="capture-photo">Capture Photo</button>
+        <button id="capture-photo">Capture & Save Photo</button>
         <button id="stop-camera">Stop Camera</button>
         <video id="camera-preview" autoplay playsinline></video>
         <div id="camera-log" class="log-div"></div>
+    </section>
+
+    <section id="storage">
+        <h2>View Stored Photos</h2>
+        <button id="load-photos">Load Photos</button>
+        <div id="gallery"></div>
     </section>
 
     <section id="global-log">
@@ -85,6 +102,18 @@
         let cameraStream = null;
         const videoElement = document.getElementById('camera-preview');
         let currentFacingMode = 'environment'; // Start with forward
+        const photoKeyPrefix = 'r1_photo_';
+        let photoCount = 0;
+
+        // Load initial photo count from storage
+        async function initPhotoCount() {
+            try {
+                let count = await window.creationStorage.plain.getItem('photo_count');
+                photoCount = count ? parseInt(atob(count)) : 0;
+            } catch (e) {
+                log(`Error loading photo count: ${e.message}`);
+            }
+        }
 
         async function startCamera() {
             try {
@@ -117,7 +146,7 @@
             log(`Switched to ${currentFacingMode}`, 'camera-log');
         }
 
-        async function capturePhoto() {
+        async function captureAndSavePhoto() {
             if (!cameraStream) return log('Start camera first', 'camera-log');
 
             try {
@@ -127,19 +156,47 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0, 240, 282);
                 const base64Image = canvas.toDataURL('image/jpeg');
-                log(`Photo captured: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
-                log('Photo captured');
+
+                // Save to storage
+                photoCount++;
+                const key = photoKeyPrefix + photoCount;
+                await window.creationStorage.plain.setItem(key, base64Image.split(',')[1]); // Store without data URL prefix
+                await window.creationStorage.plain.setItem('photo_count', btoa(photoCount.toString()));
+
+                log(`Photo captured and saved as ${key}: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
+                log('Photo captured and saved');
             } catch (e) {
-                log(`Capture error: ${e.message}`, 'camera-log');
+                log(`Capture/save error: ${e.message}`, 'camera-log');
+            }
+        }
+
+        async function loadPhotos() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = ''; // Clear previous
+            try {
+                for (let i = 1; i <= photoCount; i++) {
+                    const key = photoKeyPrefix + i;
+                    const base64 = await window.creationStorage.plain.getItem(key);
+                    if (base64) {
+                        const img = document.createElement('img');
+                        img.src = 'data:image/jpeg;base64,' + base64;
+                        gallery.appendChild(img);
+                    }
+                }
+                log(`Loaded ${photoCount} photos`);
+            } catch (e) {
+                log(`Error loading photos: ${e.message}`);
             }
         }
 
         document.getElementById('start-camera').addEventListener('click', startCamera);
         document.getElementById('switch-direction').addEventListener('click', switchDirection);
         document.getElementById('stop-camera').addEventListener('click', stopCamera);
-        document.getElementById('capture-photo').addEventListener('click', capturePhoto);
+        document.getElementById('capture-photo').addEventListener('click', captureAndSavePhoto);
+        document.getElementById('load-photos').addEventListener('click', loadPhotos);
 
-        log('Camera Rotation Test initialized');
+        initPhotoCount();
+        log('Camera Rotation Test with Storage initialized');
     </script>
 </body>
 </html>
