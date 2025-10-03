@@ -3,5 +3,6 @@
   "url": "https://bunnyr1sdkprobe.vercel.app/",
   "description": "Tests rendering, input, and JS execution on Rabbit R1.",
   "iconUrl": "https://raw.githubusercontent.com/chaosemoth/sdk-probe/main/icon.png",
-  "themeColor": "#0f0f0f"
+  "themeColor": "#ff5706"
 }
+
