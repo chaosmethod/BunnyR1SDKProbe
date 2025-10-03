@@ -2,8 +2,9 @@
   "title": "Chaosmethod's Camera Test",
   "url": "https://bunnyr1sdkprobe.vercel.app/",
   "description": "Tests rendering, input, and JS execution on Rabbit R1.",
-  "iconUrl": "https://raw.githubusercontent.com/chaosemoth/sdk-probe/main/icon.png",
+  "iconUrl": "https://raw.githubusercontent.com/chaosemothod/sdk-probe/main/icon.png",
   "themeColor": "#ff5706"
 }
+
 
 
