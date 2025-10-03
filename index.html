@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
-    <title>Rabbit R1 Camera Rotation Test with Storage</title>
+    <title>Camera App</title>
     <style>
         body {
             margin: 0;
@@ -63,34 +63,31 @@
             height: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
-            cursor: pointer;
         }
-        #fullscreen {
+        #flash-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 240px;
-            height: 282px;
-            background-color: #000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
-        #fullscreen img {
-            max-width: 100%;
-            max-height: 100%;
+        .flash {
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
-    <h1>R1 Camera Rotation Tester with Storage</h1>
+    <h1>Camera App</h1>
     
     <section id="camera">
         <h2>Camera Test (with Rotation)</h2>
         <p>To rotate: Double-press side button for vision mode, then scroll wheel to flip forward/backward. Preview should update.</p>
         <p>Press the side button (PTT) to capture and save photo.</p>
-        <button id="start-camera">Start Camera Preview</button>
+        <button id="start-camera">Camera On</button>
         <button id="switch-direction">Switch</button>
         <button id="stop-camera">Stop Camera</button>
         <video id="camera-preview" autoplay playsinline></video>
@@ -108,9 +105,7 @@
         <div id="log" class="log-div"></div>
     </section>
 
-    <div id="fullscreen">
-        <img id="fullscreen-img" src="">
-    </div>
+    <div id="flash-overlay"></div>
 
     <script>
         function log(message, targetId = 'log') {
@@ -186,6 +181,13 @@
 
                 log(`Photo captured and saved as ${key}: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
                 log('Photo captured and saved');
+
+                // Flash effect
+                const flash = document.getElementById('flash-overlay');
+                flash.classList.add('flash');
+                setTimeout(() => {
+                    flash.classList.remove('flash');
+                }, 300);
             } catch (e) {
                 log(`Capture/save error: ${e.message}`, 'camera-log');
             }
@@ -201,10 +203,6 @@
                     if (base64) {
                         const img = document.createElement('img');
                         img.src = 'data:image/jpeg;base64,' + base64;
-                        img.onclick = () => {
-                            document.getElementById('fullscreen-img').src = img.src;
-                            document.getElementById('fullscreen').style.display = 'flex';
-                        };
                         gallery.appendChild(img);
                     }
                 }
@@ -224,13 +222,7 @@
             captureAndSavePhoto();
         });
 
-        // Close fullscreen on click
-        document.getElementById('fullscreen').addEventListener('click', () => {
-            document.getElementById('fullscreen').style.display = 'none';
-        });
-
         initPhotoCount();
-        startCamera(); // Auto-start camera on load
         log('Camera Rotation Test with Storage initialized');
     </script>
 </body>
