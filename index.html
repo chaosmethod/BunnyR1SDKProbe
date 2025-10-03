@@ -81,6 +81,22 @@
             max-width: 100%;
             max-height: 100%;
         }
+        #delete-fullscreen {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         #flash-overlay {
             position: fixed;
             top: 0;
@@ -123,6 +139,7 @@
 
     <div id="fullscreen">
         <img id="fullscreen-img" src="">
+        <button id="delete-fullscreen">x</button>
     </div>
 
     <div id="flash-overlay"></div>
@@ -140,6 +157,7 @@
         let currentFacingMode = 'environment'; // Start with forward
         const photoKeyPrefix = 'r1_photo_';
         let photoCount = 0;
+        let currentIndex = -1;
 
         // Load initial photo count from storage
         async function initPhotoCount() {
@@ -217,24 +235,53 @@
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = ''; // Clear previous
             try {
-                let count = await window.creationStorage.plain.getItem('photo_count');
-                let localCount = count ? parseInt(atob(count)) : 0;
-                for (let i = 1; i <= localCount; i++) {
+                for (let i = 1; i <= photoCount; i++) {
                     const key = photoKeyPrefix + i;
                     const base64 = await window.creationStorage.plain.getItem(key);
                     if (base64) {
                         const img = document.createElement('img');
                         img.src = 'data:image/jpeg;base64,' + base64;
-                        img.onclick = () => {
+                        img.dataset.index = i;
+                        img.onclick = (e) => {
+                            currentIndex = parseInt(e.target.dataset.index);
                             document.getElementById('fullscreen-img').src = img.src;
                             document.getElementById('fullscreen').style.display = 'flex';
                         };
                         gallery.appendChild(img);
                     }
                 }
-                log(`Loaded ${localCount} photos`);
+                log(`Loaded ${photoCount} photos`);
             } catch (e) {
                 log(`Error loading photos: ${e.message}`);
+            }
+        }
+
+        async function deleteCurrentPhoto() {
+            if (currentIndex === -1) return;
+
+            try {
+                const key = photoKeyPrefix + currentIndex;
+                await window.creationStorage.plain.removeItem(key);
+
+                // Shift remaining photos
+                for (let j = currentIndex + 1; j <= photoCount; j++) {
+                    const oldKey = photoKeyPrefix + j;
+                    const newKey = photoKeyPrefix + (j - 1);
+                    const data = await window.creationStorage.plain.getItem(oldKey);
+                    if (data) {
+                        await window.creationStorage.plain.setItem(newKey, data);
+                    }
+                    await window.creationStorage.plain.removeItem(oldKey);
+                }
+
+                photoCount--;
+                await window.creationStorage.plain.setItem('photo_count', btoa(photoCount.toString()));
+
+                log(`Deleted photo at index ${currentIndex}`);
+                document.getElementById('fullscreen').style.display = 'none';
+                viewImages(); // Reload gallery
+            } catch (e) {
+                log(`Error deleting photo: ${e.message}`);
             }
         }
 
@@ -248,14 +295,22 @@
             captureAndSavePhoto();
         });
 
-        // Close fullscreen on click
-        document.getElementById('fullscreen').addEventListener('click', () => {
-            document.getElementById('fullscreen').style.display = 'none';
+        // Scroll wheel for switch
+        window.addEventListener('scrollUp', switchDirection);
+        window.addEventListener('scrollDown', switchDirection);
+
+        // Close fullscreen on click (but not on delete button)
+        document.getElementById('fullscreen').addEventListener('click', (e) => {
+            if (e.target.id !== 'delete-fullscreen') {
+                document.getElementById('fullscreen').style.display = 'none';
+            }
         });
+
+        // Delete from fullscreen
+        document.getElementById('delete-fullscreen').addEventListener('click', deleteCurrentPhoto);
 
         initPhotoCount();
         log('Camera Rotation Test with Storage initialized');
     </script>
 </body>
 </html>
-
