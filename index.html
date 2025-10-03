@@ -41,15 +41,6 @@
             height: auto;
             max-height: 200px;
         }
-        .log-div {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            padding: 10px;
-            height: 100px;
-            overflow-y: auto;
-            font-size: 10px;
-            white-space: pre-wrap;
-        }
         p {
             margin: 5px 0;
         }
@@ -117,24 +108,16 @@
     <h1>Camera App</h1>
     
     <section id="camera">
-        <h2>Camera Test (with Rotation)</h2>
         <p>Press PTT button to take picture and scroll wheel to switch angle</p>
         <button id="start-camera">Start</button>
-        <button id="switch-direction">Switch</button>
         <button id="stop-camera">Stop</button>
         <video id="camera-preview" autoplay playsinline></video>
-        <div id="camera-log" class="log-div"></div>
     </section>
 
     <section id="storage">
         <h2>View Stored Photos</h2>
         <button id="view-images">View Images</button>
         <div id="gallery"></div>
-    </section>
-
-    <section id="global-log">
-        <h2>Global Log</h2>
-        <div id="log" class="log-div"></div>
     </section>
 
     <div id="fullscreen">
@@ -145,20 +128,18 @@
     <div id="flash-overlay"></div>
 
     <script>
-        function log(message, targetId = 'log') {
-            const target = document.getElementById(targetId);
-            target.innerHTML += `${new Date().toISOString()}: ${message}\n`;
-            target.scrollTop = target.scrollHeight;
+        function log(message) {
+            console.log(`${new Date().toISOString()}: ${message}`);
         }
 
         // Camera Test
         let cameraStream = null;
         const videoElement = document.getElementById('camera-preview');
         let currentFacingMode = 'environment'; // Start with forward
-        let isSwitching = false;
         const photoKeyPrefix = 'r1_photo_';
         let photoCount = 0;
         let currentDeleteIndex = -1;
+        let isSwitching = false;
 
         // Load initial photo count from storage
         async function initPhotoCount() {
@@ -175,9 +156,9 @@
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
                 videoElement.srcObject = cameraStream;
                 videoElement.play();
-                log(`Camera preview started (${currentFacingMode})`, 'camera-log');
+                log(`Camera preview started (${currentFacingMode})`);
             } catch (e) {
-                log(`Camera access error: ${e.message}`, 'camera-log');
+                log(`Camera access error: ${e.message}`);
             }
         }
 
@@ -185,7 +166,7 @@
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 videoElement.srcObject = null;
-                log('Camera stopped', 'camera-log');
+                log('Camera stopped');
             }
         }
 
@@ -196,7 +177,7 @@
             stopCamera(); // Stop current stream
             currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
             await startCamera(); // Restart with new mode
-            log(`Switched to ${currentFacingMode}`, 'camera-log');
+            log(`Switched to ${currentFacingMode}`);
 
             setTimeout(() => {
                 isSwitching = false;
@@ -204,7 +185,7 @@
         }
 
         async function captureAndSavePhoto() {
-            if (!cameraStream) return log('Start camera first', 'camera-log');
+            if (!cameraStream) return log('Start camera first');
 
             try {
                 const canvas = document.createElement('canvas');
@@ -220,7 +201,7 @@
                 localStorage.setItem(key, base64Image.split(',')[1]); // Store without data URL prefix
                 localStorage.setItem('photo_count', photoCount.toString());
 
-                log(`Photo captured and saved as ${key}: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
+                log(`Photo captured and saved as ${key}: ${base64Image.substring(0, 50)}... (truncated)`);
                 log('Photo captured and saved');
 
                 // Flash effect
@@ -230,7 +211,7 @@
                     flash.classList.remove('flash');
                 }, 300);
             } catch (e) {
-                log(`Capture/save error: ${e.message}`, 'camera-log');
+                log(`Capture/save error: ${e.message}`);
             }
         }
 
@@ -291,7 +272,6 @@
         }
 
         document.getElementById('start-camera').addEventListener('click', startCamera);
-        document.getElementById('switch-direction').addEventListener('click', switchDirection);
         document.getElementById('stop-camera').addEventListener('click', stopCamera);
         document.getElementById('view-images').addEventListener('click', viewImages);
 
