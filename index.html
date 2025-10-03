@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=240, height=282, initial-scale=1.0">
-    <title>Rabbit R1 Camera Rotation Test with Storage</title>
+    <title>Camera App</title>
     <style>
         body {
             margin: 0;
@@ -58,43 +58,53 @@
             flex-wrap: wrap;
             gap: 5px;
         }
-        .thumbnail-container {
-            position: relative;
+        #gallery img {
             width: 100px;
-        }
-        .thumbnail-container img {
-            width: 100%;
             height: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
-        }
-        .delete-btn {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background-color: red;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
             cursor: pointer;
-            display: flex;
+        }
+        #fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px;
+            height: 282px;
+            background-color: #000;
+            display: none;
             align-items: center;
             justify-content: center;
+            z-index: 10;
+        }
+        #fullscreen img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .flash {
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
-    <h1>R1 Camera Rotation Tester with Storage</h1>
+    <h1>Camera App</h1>
     
     <section id="camera">
         <h2>Camera Test (with Rotation)</h2>
-        <p>To rotate: Double-press side button for vision mode, then scroll wheel to flip forward/backward. Preview should update.</p>
         <p>Press the side button (PTT) to capture and save photo.</p>
         <button id="start-camera">Start Camera Preview</button>
-        <button id="switch-direction">Switch Direction</button>
+        <button id="switch-direction">Switch</button>
         <button id="stop-camera">Stop Camera</button>
         <video id="camera-preview" autoplay playsinline></video>
         <div id="camera-log" class="log-div"></div>
@@ -110,6 +120,12 @@
         <h2>Global Log</h2>
         <div id="log" class="log-div"></div>
     </section>
+
+    <div id="fullscreen">
+        <img id="fullscreen-img" src="">
+    </div>
+
+    <div id="flash-overlay"></div>
 
     <script>
         function log(message, targetId = 'log') {
@@ -185,6 +201,13 @@
 
                 log(`Photo captured and saved as ${key}: ${base64Image.substring(0, 50)}... (truncated)`, 'camera-log');
                 log('Photo captured and saved');
+
+                // Flash effect
+                const flash = document.getElementById('flash-overlay');
+                flash.classList.add('flash');
+                setTimeout(() => {
+                    flash.classList.remove('flash');
+                }, 300);
             } catch (e) {
                 log(`Capture/save error: ${e.message}`, 'camera-log');
             }
@@ -194,54 +217,24 @@
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = ''; // Clear previous
             try {
-                for (let i = 1; i <= photoCount; i++) {
+                let count = await window.creationStorage.plain.getItem('photo_count');
+                let localCount = count ? parseInt(atob(count)) : 0;
+                for (let i = 1; i <= localCount; i++) {
                     const key = photoKeyPrefix + i;
                     const base64 = await window.creationStorage.plain.getItem(key);
                     if (base64) {
-                        const container = document.createElement('div');
-                        container.className = 'thumbnail-container';
-
                         const img = document.createElement('img');
                         img.src = 'data:image/jpeg;base64,' + base64;
-                        container.appendChild(img);
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.innerText = 'x';
-                        deleteBtn.className = 'delete-btn';
-                        deleteBtn.onclick = async () => {
-                            await deletePhoto(i);
-                            viewImages(); // Reload gallery
+                        img.onclick = () => {
+                            document.getElementById('fullscreen-img').src = img.src;
+                            document.getElementById('fullscreen').style.display = 'flex';
                         };
-                        container.appendChild(deleteBtn);
-
-                        gallery.appendChild(container);
+                        gallery.appendChild(img);
                     }
                 }
-                log(`Loaded ${photoCount} photos`);
+                log(`Loaded ${localCount} photos`);
             } catch (e) {
                 log(`Error loading photos: ${e.message}`);
-            }
-        }
-
-        async function deletePhoto(index) {
-            try {
-                const key = photoKeyPrefix + index;
-                await window.creationStorage.plain.removeItem(key);
-                // Shift remaining photos
-                for (let i = index + 1; i <= photoCount; i++) {
-                    const oldKey = photoKeyPrefix + i;
-                    const newKey = photoKeyPrefix + (i - 1);
-                    const data = await window.creationStorage.plain.getItem(oldKey);
-                    if (data) {
-                        await window.creationStorage.plain.setItem(newKey, data);
-                        await window.creationStorage.plain.removeItem(oldKey);
-                    }
-                }
-                photoCount--;
-                await window.creationStorage.plain.setItem('photo_count', btoa(photoCount.toString()));
-                log(`Deleted photo at index ${index}`);
-            } catch (e) {
-                log(`Error deleting photo: ${e.message}`);
             }
         }
 
@@ -255,8 +248,14 @@
             captureAndSavePhoto();
         });
 
+        // Close fullscreen on click
+        document.getElementById('fullscreen').addEventListener('click', () => {
+            document.getElementById('fullscreen').style.display = 'none';
+        });
+
         initPhotoCount();
         log('Camera Rotation Test with Storage initialized');
     </script>
 </body>
 </html>
+
