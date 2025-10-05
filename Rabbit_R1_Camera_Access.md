@@ -1,21 +1,28 @@
+<!--
+Rabbit R1 Camera Access
 
-\\\Rabbit R1 Camera Access
+Camera Access
+Access the device camera using standard web APIs like navigator.mediaDevices.getUserMedia. The R1 supports both forward-facing ('environment') and user-facing ('user') cameras. Photos can be captured via canvas drawing and stored in local storage (or using CreationStorageHandler for consistency).
 
-
- Camera Access
-Access the device camera using standard web APIs like navigator.mediaDevices.getUserMedia. The r1 supports both forward-facing ('environment') and user-facing ('user') cameras. Photos can be captured via canvas drawing and stored in local storage (or using CreationStorageHandler for consistency).
 Notes:
+- Ensure the video element fits within the 240x282px screen.
+- Use hardware buttons like PTT (sideClick) for capture and scroll wheel for switching camera direction.
+- Storage uses base64-encoded images for persistence.
+- Implement flash effects via CSS overlays for visual feedback.
+-->
 
-Ensure the video element fits within the 240x282px screen.
-Use hardware buttons like PTT (sideClick) for capture and scroll wheel for switching camera direction.
-Storage uses base64-encoded images for persistence.
-Implement flash effects via CSS overlays for visual feedback.\\\
+<script>
+let cameraStream;
+let currentFacingMode = 'environment';
+let isSwitching = false;
+const videoElement = document.querySelector('video');
+const photoKeyPrefix = 'r1_photo_';
+let currentDeleteIndex = -1;
 
-\\\Starting the Camera\\\
-javascriptasync function startCamera() {
+async function startCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: currentFacingMode } // 'environment' or 'user'
+      video: { facingMode: currentFacingMode }
     });
     videoElement.srcObject = cameraStream;
     videoElement.play();
@@ -24,26 +31,26 @@ javascriptasync function startCamera() {
     log(`Camera access error: ${e.message}`);
   }
 }
-Stopping the Camera
-javascriptfunction stopCamera() {
+
+function stopCamera() {
   if (cameraStream) {
     cameraStream.getTracks().forEach(track => track.stop());
     videoElement.srcObject = null;
     log('Camera stopped');
   }
 }
-Switching Camera Direction
-javascriptasync function switchDirection() {
+
+async function switchDirection() {
   if (!cameraStream || isSwitching) return;
   isSwitching = true;
-  stopCamera(); // Stop current stream
+  stopCamera();
   currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-  await startCamera(); // Restart with new mode
-  log('Switched to ${currentFacingMode}');
-  setTimeout(() => { isSwitching = false; }, 1000); // Pause for 1 second
+  await startCamera();
+  log(`Switched to ${currentFacingMode}`);
+  setTimeout(() => { isSwitching = false; }, 1000);
 }
-Capturing and Saving a Photo
-javascriptasync function captureAndSavePhoto() {
+
+async function captureAndSavePhoto() {
   if (!cameraStream) return log('Start camera first');
   try {
     const canvas = document.createElement('canvas');
@@ -53,25 +60,23 @@ javascriptasync function captureAndSavePhoto() {
     ctx.drawImage(videoElement, 0, 0, 240, 282);
     const base64Image = canvas.toDataURL('image/jpeg');
 
-    // Save to storage
-    const photoKeyPrefix = 'r1_photo_';
-    let photoCount = await localStorage.getItem('photo_count') ? parseInt(localStorage.getItem('photo_count'), 10) : 0;
+    let photoCount = localStorage.getItem('photo_count') ? parseInt(localStorage.getItem('photo_count'), 10) : 0;
     const key = photoKeyPrefix + photoCount;
-    localStorage.setItem(key, base64Image.split(',')[1]); // Store base64 without prefix
+    localStorage.setItem(key, base64Image.split(',')[1]);
     photoCount++;
     localStorage.setItem('photo_count', photoCount.toString());
-    log(`Photo captured and saved as ${key}: [base64Image.substr(0, 20)]...`);
+    log(`Photo captured and saved as ${key}: ${base64Image.substr(0, 20)}...`);
   } catch (e) {
     log(`Capture/save error: ${e.message}`);
   }
 }
-Viewing Stored Images (Gallery)
-javascriptasync function viewImages() {
+
+async function viewImages() {
   const gallery = document.getElementById('gallery');
-  gallery.innerHTML = ''; // Clear previous
+  gallery.innerHTML = '';
   try {
     let localCount = localStorage.getItem('photo_count') ? parseInt(localStorage.getItem('photo_count'), 10) : 0;
-    for (let i = 1; i <= localCount; i++) { // Assuming 1-indexed
+    for (let i = 1; i <= localCount; i++) {
       const key = photoKeyPrefix + (i - 1);
       const base64 = localStorage.getItem(key);
       if (base64) {
@@ -86,14 +91,13 @@ javascriptasync function viewImages() {
     log(`Error loading photos: ${e.message}`);
   }
 }
-Deleting a Photo
-javascriptasync function deleteCurrentPhoto() {
+
+async function deleteCurrentPhoto() {
   if (currentDeleteIndex === -1) return;
   try {
     const key = photoKeyPrefix + currentDeleteIndex;
     localStorage.removeItem(key);
 
-    // Shift remaining photos
     let photoCount = parseInt(localStorage.getItem('photo_count'), 10);
     for (let j = currentDeleteIndex + 1; j < photoCount; j++) {
       const oldKey = photoKeyPrefix + j;
@@ -107,16 +111,32 @@ javascriptasync function deleteCurrentPhoto() {
 
     photoCount--;
     localStorage.setItem('photo_count', photoCount.toString());
-    log('Deleted photo at index ${currentDeleteIndex}');
-    document.getElementById('fullscreen').style.display = 'none'; // Hide fullscreen view
-    viewImages(); // Reload gallery
+    log(`Deleted photo at index ${currentDeleteIndex}`);
+    document.getElementById('fullscreen').style.display = 'none';
+    viewImages();
   } catch (e) {
     log(`Error deleting photo: ${e.message}`);
   }
 }
-Flash Effect
-Use a CSS overlay for a flash simulation when capturing photos.
-css#flash-overlay {
+
+function flash() {
+  const flash = document.getElementById('flash-overlay');
+  flash.classList.add('flash');
+  setTimeout(() => {
+    flash.classList.remove('flash');
+  }, 300);
+}
+
+window.addEventListener('sideClick', () => {
+  captureAndSavePhoto();
+});
+
+window.addEventListener('scrollUp', switchDirection);
+window.addEventListener('scrollDown', switchDirection);
+</script>
+
+<style>
+#flash-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -131,22 +151,4 @@ css#flash-overlay {
 .flash {
   opacity: 0.8;
 }
-javascriptfunction flash() {
-  const flash = document.getElementById('flash-overlay');
-  flash.classList.add('flash');
-  setTimeout(() => {
-    flash.classList.remove('flash');
-  }, 300);
-}
-Integrating with Hardware Events
-javascript// Side button for capture
-window.addEventListener('sideClick', () => {
-  captureAndSavePhoto();
-});
-
-// Scroll wheel for switch
-window.addEventListener('scrollUp', switchDirection);
-
-window.addEventListener('scrollDown', switchDirection);
-
-
+</style>
