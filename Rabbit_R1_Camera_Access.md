@@ -1,5 +1,5 @@
 
-Rabbit R1 Camera Access
+\\\Rabbit R1 Camera Access
 
 
  Camera Access
@@ -9,9 +9,9 @@ Notes:
 Ensure the video element fits within the 240x282px screen.
 Use hardware buttons like PTT (sideClick) for capture and scroll wheel for switching camera direction.
 Storage uses base64-encoded images for persistence.
-Implement flash effects via CSS overlays for visual feedback.
+Implement flash effects via CSS overlays for visual feedback.\\\
 
-Starting the Camera
+\\\Starting the Camera\\\
 javascriptasync function startCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -148,4 +148,5 @@ window.addEventListener('sideClick', () => {
 window.addEventListener('scrollUp', switchDirection);
 
 window.addEventListener('scrollDown', switchDirection);
+
 
