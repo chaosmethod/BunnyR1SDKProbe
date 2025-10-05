@@ -21,7 +21,7 @@ javascriptasync function startCamera() {
     videoElement.play();
     log(`Camera preview started: ${currentFacingMode}`);
   } catch (e) {
-    log('Camera access error: ${e.message}');
+    log(`Camera access error: ${e.message}`);
   }
 }
 Stopping the Camera
@@ -148,3 +148,4 @@ window.addEventListener('sideClick', () => {
 window.addEventListener('scrollUp', switchDirection);
 
 window.addEventListener('scrollDown', switchDirection);
+
