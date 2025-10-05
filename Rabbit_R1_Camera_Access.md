@@ -19,7 +19,7 @@ javascriptasync function startCamera() {
     });
     videoElement.srcObject = cameraStream;
     videoElement.play();
-    log('Camera preview started: ${currentFacingMode}');
+    log(`Camera preview started: ${currentFacingMode}`);
   } catch (e) {
     log('Camera access error: ${e.message}');
   }
@@ -146,4 +146,5 @@ window.addEventListener('sideClick', () => {
 
 // Scroll wheel for switch
 window.addEventListener('scrollUp', switchDirection);
+
 window.addEventListener('scrollDown', switchDirection);
